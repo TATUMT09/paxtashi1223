@@ -8,12 +8,14 @@ import QishloqHojalik.Paxtachi.Repositories.UserRepository
 import org.springframework.boot.CommandLineRunner
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 
 @Service
 class AuthService(
     private val userRepository: UserRepository,
-    private val jwtService: JwtService   // 🔥 SHUNI QO‘SH
+    private val jwtService: JwtService,
+    private val passwordEncoder: PasswordEncoder
 ) {
 
     fun login(request: LoginRequest): LoginResponse {
@@ -21,25 +23,21 @@ class AuthService(
         val user = userRepository.findByUsernameAndDeletedFalse(request.username)
             ?: throw RuntimeException("User topilmadi")
 
-        if (user.password != request.password) {
+        // 🔥 TO‘G‘RI PASSWORD CHECK
+        if (!passwordEncoder.matches(request.password, user.password)) {
             throw RuntimeException("Parol xato")
         }
 
-        val token = jwtService.generateToken(user)   // 🔥 TOKEN YARATILDI
+        val token = jwtService.generateToken(user)
 
-        val panelUrl = when(user.direction) {
-            Direction.PAXTACHILIK -> "/paxtachilik"
-            Direction.TUTCHILIK -> "/tutchilik"
-            Direction.GALLACHILIK -> "/gallachilik"
-            Direction.BOGDORCHILIK -> "/bogdorchilik"
-            Direction.CHORVACHILIK -> "/chorvachilik"
-        }
+        // 🔥 ENUMDAN O‘ZI OLADI
+        val panelUrl = user.direction.panelUrl
 
         return LoginResponse(
             username = user.username,
             direction = user.direction,
             panelUrl = panelUrl,
-            token = token   // 🔥 ENDII TO‘G‘RI
+            token = token
         )
     }
 }

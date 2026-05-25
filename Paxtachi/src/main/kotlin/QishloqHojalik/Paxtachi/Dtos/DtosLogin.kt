@@ -11,3 +11,4 @@ data class LoginResponse(
     val panelUrl: String,
     val token: String
 )
+

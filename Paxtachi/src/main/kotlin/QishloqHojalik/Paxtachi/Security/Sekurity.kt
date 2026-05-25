@@ -8,6 +8,8 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 import org.springframework.stereotype.Service
@@ -19,6 +21,11 @@ import org.springframework.web.filter.CorsFilter
 class SecurityConfig(
     private val jwtService: JwtService
 ) {
+
+    @Bean
+    fun passwordEncoder(): PasswordEncoder {
+        return BCryptPasswordEncoder()
+    }
 
     @Bean
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
@@ -34,12 +41,6 @@ class SecurityConfig(
                 it.requestMatchers("/api/auth/**").permitAll()
                 it.requestMatchers("/uploads/**").permitAll()
                 it.requestMatchers("/api/v1/auth/**").permitAll()
-                it.requestMatchers("/api/v1/**").permitAll()
-                // Excel upload endpointlar
-                it.requestMatchers("/api/pump-stations/import").authenticated()
-                it.requestMatchers("/api/v1/farmers/upload").authenticated()
-                it.requestMatchers("/land/upload").authenticated()
-
                 it.anyRequest().authenticated()
             }
             .addFilterBefore(

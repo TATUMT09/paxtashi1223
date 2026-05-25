@@ -1,26 +1,39 @@
 package QishloqHojalik.Paxtachi.Controllers
 
 import QishloqHojalik.Paxtachi.Entity.PaxtachiBalance
+import QishloqHojalik.Paxtachi.Enums.Direction
 import QishloqHojalik.Paxtachi.Enums.Specialization
+import QishloqHojalik.Paxtachi.Security.AccessService
 import QishloqHojalik.Paxtachi.Services.PaxtachiBalanceService
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 
 @RestController
 @RequestMapping("/api/v1/farmers")
 class FarmersController(
-    private val service: PaxtachiBalanceService
+    private val service: PaxtachiBalanceService,
+    private val accessService: AccessService
 ) {
+
+    private fun check(request: HttpServletRequest) {
+        accessService.checkAccess(
+            request,
+            Direction.FARMERS
+        )
+    }
 
     @GetMapping
     fun getFarmers(
+        request: HttpServletRequest,
         @RequestParam(required = false) specializationId: String?,
         @RequestParam(required = false) q: String?,
         @RequestParam(defaultValue = "1") page: Int,
-        @RequestParam(defaultValue = "20") pageSize: Int,
+        @RequestParam(defaultValue = "1000") pageSize: Int,
         @RequestParam(defaultValue = "id:desc") sort: String,
         @RequestParam(required = false) season: Int?
     ): Map<String, Any> {
+
 
         val safePage = if (page <= 0) 1 else page
         val safePageSize = if (pageSize <= 0) 20 else pageSize
@@ -37,24 +50,35 @@ class FarmersController(
 
     @GetMapping("/{id}/analytics")
     fun getFarmerAnalytics(
+        request: HttpServletRequest,
         @PathVariable id: Long,
         @RequestParam(required = false) season: Int?
     ): Map<String, Any> {
+
+
         return service.getFarmerAnalytics(id, season)
     }
 
     @PostMapping("/upload")
     fun uploadExcel(
+        request: HttpServletRequest,
         @RequestParam("file") file: MultipartFile
     ): Map<String, String> {
+
+        check(request)
+
         val result = service.uploadExcel(file)
+
         return mapOf("message" to result)
     }
 
     @GetMapping("/hudud-section")
     fun getHududSection(
+        request: HttpServletRequest,
         @RequestParam name: String
     ): List<PaxtachiBalance> {
+
+
         return service.getHududSection(name)
     }
 }
@@ -62,13 +86,24 @@ class FarmersController(
 @RestController
 @RequestMapping("/api/v1/dashboard")
 class DashboardController(
-    private val service: PaxtachiBalanceService
+    private val service: PaxtachiBalanceService,
+    private val accessService: AccessService
 ) {
+
+    private fun check(request: HttpServletRequest) {
+        accessService.checkAccess(
+            request,
+            Direction.DASHBOARD
+        )
+    }
 
     @GetMapping("/land-summary")
     fun landSummary(
+        request: HttpServletRequest,
         @RequestParam(required = false) season: Int?
     ): PaxtachiBalance {
+
+
         return service.getDashboardSummary(season)
     }
 }
@@ -79,6 +114,7 @@ class LookupController {
 
     @GetMapping("/specializations")
     fun getSpecializations(): List<Map<String, String>> {
+
         return Specialization.values().map {
             mapOf(
                 "id" to it.name,
@@ -92,13 +128,24 @@ class LookupController {
 @RestController
 @RequestMapping("/api/v1/specializations")
 class SpecializationController(
-    private val service: PaxtachiBalanceService
+    private val service: PaxtachiBalanceService,
+    private val accessService: AccessService
 ) {
+
+    private fun check(request: HttpServletRequest) {
+        accessService.checkAccess(
+            request,
+            Direction.SPECIALIZATION
+        )
+    }
 
     @GetMapping("/summary")
     fun getSummary(
+        request: HttpServletRequest,
         @RequestParam(required = false) season: Int?
     ): Map<String, Any> {
+
+
         return service.getSpecializationSummary(season)
     }
 }
