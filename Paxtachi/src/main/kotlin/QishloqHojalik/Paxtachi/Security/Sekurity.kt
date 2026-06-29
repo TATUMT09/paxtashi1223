@@ -14,90 +14,66 @@ import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 import org.springframework.stereotype.Service
 import org.springframework.web.cors.CorsConfiguration
+import org.springframework.web.cors.CorsConfigurationSource
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource
-import org.springframework.web.filter.CorsFilter
 
 @Configuration
-class SecurityConfig(
-    private val jwtService: JwtService
-) {
+class SecurityConfig(private val jwtService: JwtService) {
 
     @Bean
-    fun passwordEncoder(): PasswordEncoder {
-        return BCryptPasswordEncoder()
+    fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder()
+
+    @Bean
+    fun corsConfigurationSource(): CorsConfigurationSource {
+        val config = CorsConfiguration()
+        config.allowCredentials = true
+        config.allowedOrigins = listOf(
+            "http://localhost:3000",
+            "http://localhost:3001",
+            "http://localhost:3002",
+            "http://localhost:5173"
+        )
+        config.allowedHeaders = listOf("*")
+        config.allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
+        config.maxAge = 3600L
+        val source = UrlBasedCorsConfigurationSource()
+        source.registerCorsConfiguration("/**", config)
+        return source
     }
 
     @Bean
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
-
         http
             .csrf { it.disable() }
-            .cors { }
-            .sessionManagement {
-                it.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            }
+            .cors { it.configurationSource(corsConfigurationSource()) }
+            .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests {
+                it.requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                 it.requestMatchers("/auth/**").permitAll()
                 it.requestMatchers("/api/auth/**").permitAll()
                 it.requestMatchers("/uploads/**").permitAll()
                 it.requestMatchers("/api/v1/auth/**").permitAll()
                 it.anyRequest().authenticated()
             }
-            .addFilterBefore(
-                JwtFilter(jwtService),
-                UsernamePasswordAuthenticationFilter::class.java
-            )
-
+            .addFilterBefore(JwtFilter(jwtService), UsernamePasswordAuthenticationFilter::class.java)
         return http.build()
-    }
-}
-
-@Configuration
-class CorsConfig {
-
-    @Bean
-    fun corsFilter(): CorsFilter {
-
-        val config = CorsConfiguration()
-
-        config.allowCredentials = true
-        config.allowedOrigins = listOf(
-            "http://localhost:3000",
-            "http://localhost:5173"
-        )
-        config.allowedHeaders = listOf("*")
-        config.allowedMethods = listOf(
-            "GET",
-            "POST",
-            "PUT",
-            "DELETE",
-            "OPTIONS"
-        )
-
-        val source = UrlBasedCorsConfigurationSource()
-        source.registerCorsConfiguration("/**", config)
-
-        return CorsFilter(source)
     }
 }
 
 @Service
 class AccessService {
 
-    fun checkAccess(
-        request: HttpServletRequest,
-        targetDirection: Direction
-    ) {
+    fun checkAccess(request: HttpServletRequest, vararg allowedDirections: Direction) {
         val role = request.getAttribute("role") as? String
-            ?: throw RuntimeException("Token ichida role yo‘q")
+            ?: throw RuntimeException("Token ichida role yo'q")
 
         val userDirection = request.getAttribute("direction") as? String
-            ?: throw RuntimeException("Token ichida direction yo‘q")
+            ?: throw RuntimeException("Token ichida direction yo'q")
 
         if (role == "SUPER_ADMIN") return
 
-        if (role == "ADMIN" && userDirection == targetDirection.name) return
+        if (role == "ADMIN" && allowedDirections.any { it.name == userDirection }) return
 
-        throw RuntimeException("Sizda ruxsat yo‘q ❌")
+        throw RuntimeException("Sizda ruxsat yo'q ❌")
     }
 }

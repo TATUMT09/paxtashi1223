@@ -3,6 +3,7 @@ package QishloqHojalik.Paxtachi.Controllers
 import QishloqHojalik.Paxtachi.Dtos.*
 import QishloqHojalik.Paxtachi.Enums.Direction
 import QishloqHojalik.Paxtachi.Security.AccessService
+import QishloqHojalik.Paxtachi.Services.ChangeLogService
 import QishloqHojalik.Paxtachi.Services.LandContourService
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.http.MediaType
@@ -13,7 +14,8 @@ import org.springframework.web.multipart.MultipartFile
 @RequestMapping("/api/land-contours")
 class LandContourController(
     private val service: LandContourService,
-    private val accessService: AccessService
+    private val accessService: AccessService,
+    private val changeLogService: ChangeLogService
 ) {
 
     private fun check(request: HttpServletRequest) {
@@ -42,7 +44,9 @@ class LandContourController(
 
         check(request)
 
-        return service.create(dto)
+        val result = service.create(dto)
+        changeLogService.log(request, "land_contours", result.id, "Yangi yer konturi qo'shildi", "CREATE")
+        return result
     }
 
     @GetMapping
@@ -66,9 +70,11 @@ class LandContourController(
     fun update(
         request: HttpServletRequest,
         @PathVariable id: Long,
-        @RequestBody dto: LandContourDto
+        @RequestBody dto: LandContourDto,
+        @RequestParam(required = false, defaultValue = "") reason: String
     ): LandContourResponseDto {
         check(request)
+        changeLogService.log(request, "land_contours", id, reason)
         return service.update(id, dto)
     }
 
@@ -80,6 +86,7 @@ class LandContourController(
 
         check(request)
 
+        changeLogService.log(request, "land_contours", id, "Yer konturi o'chirildi", "DELETE")
         service.delete(id)
     }
 }

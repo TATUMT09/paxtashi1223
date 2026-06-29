@@ -4,6 +4,7 @@ import QishloqHojalik.Paxtachi.Dtos.*
 import QishloqHojalik.Paxtachi.Enums.Direction
 import QishloqHojalik.Paxtachi.Security.AccessService
 import QishloqHojalik.Paxtachi.Services.AgroTechnicService
+import QishloqHojalik.Paxtachi.Services.ChangeLogService
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.*
@@ -13,7 +14,8 @@ import org.springframework.web.multipart.MultipartFile
 @RequestMapping("/api/agro-technics")
 class AgroTechnicController(
     private val service: AgroTechnicService,
-    private val accessService: AccessService
+    private val accessService: AccessService,
+    private val changeLogService: ChangeLogService
 ) {
 
     private fun check(request: HttpServletRequest) {
@@ -42,7 +44,9 @@ class AgroTechnicController(
 
         check(request)
 
-        return service.create(dto)
+        val result = service.create(dto)
+        changeLogService.log(request, "agro_technics", result.id, "Yangi texnika qo'shildi", "CREATE")
+        return result
     }
 
     @GetMapping
@@ -68,11 +72,13 @@ class AgroTechnicController(
     fun update(
         request: HttpServletRequest,
         @PathVariable id: Long,
-        @RequestBody dto: AgroTechnicDto
+        @RequestBody dto: AgroTechnicDto,
+        @RequestParam(required = false, defaultValue = "") reason: String
     ): AgroTechnicResponseDto {
 
         check(request)
 
+        changeLogService.log(request, "agro_technics", id, reason)
         return service.update(id, dto)
     }
 
@@ -84,6 +90,7 @@ class AgroTechnicController(
 
         check(request)
 
+        changeLogService.log(request, "agro_technics", id, "Texnika o'chirildi", "DELETE")
         service.delete(id)
     }
 }

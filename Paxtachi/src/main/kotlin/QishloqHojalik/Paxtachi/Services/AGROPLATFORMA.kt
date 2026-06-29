@@ -14,14 +14,17 @@ import java.time.LocalDateTime
 interface PumpExcelService {
 
     fun importExcel(file: MultipartFile): ExcelImportResponse
+    fun createFarmer(dto: FarmerPumpAggregateDto): FarmerPumpAggregateResponseDto
     fun getAllFarmers(): List<FarmerPumpAggregateResponseDto>
     fun getFarmerById(id: Long): FarmerPumpAggregateResponseDto
     fun updateFarmer(id: Long, dto: FarmerPumpAggregateDto): FarmerPumpAggregateResponseDto
     fun deleteFarmer(id: Long)
+    fun createStation(dto: PumpStationDto): PumpStationResponseDto
     fun getAllStations(): List<PumpStationResponseDto>
     fun getStationById(id: Long): PumpStationResponseDto
     fun updateStation(id: Long, dto: PumpStationDto): PumpStationResponseDto
     fun deleteStation(id: Long)
+    fun createTechnical(dto: PumpStationTechnicalDto): PumpStationTechnicalResponseDto
     fun getAllTechnicals(): List<PumpStationTechnicalResponseDto>
     fun getTechnicalById(id: Long): PumpStationTechnicalResponseDto
     fun updateTechnical(id: Long, dto: PumpStationTechnicalDto): PumpStationTechnicalResponseDto
@@ -169,6 +172,22 @@ class PumpExcelServiceImpl(
         return Pair(stationSaved, technicalSaved)
     }
 
+    override fun createFarmer(dto: FarmerPumpAggregateDto): FarmerPumpAggregateResponseDto {
+        val entity = FarmerPumpAggregate(
+            farmerName = dto.farmerName,
+            inn = dto.inn,
+            address = dto.address,
+            pumpModel = dto.pumpModel,
+            productionYear = dto.productionYear,
+            waterLiftHeight = dto.waterLiftHeight,
+            waterFlow = dto.waterFlow,
+            enginePower = dto.enginePower,
+            waterSource = dto.waterSource,
+            connectedArea = dto.connectedArea
+        )
+        return farmerRepo.save(entity).toResponseDto()
+    }
+
     override fun getAllFarmers() =
         farmerRepo.findAllByDeletedFalse().map { it.toResponseDto() }
 
@@ -205,6 +224,16 @@ class PumpExcelServiceImpl(
         farmerRepo.save(entity)
     }
 
+    override fun createStation(dto: PumpStationDto): PumpStationResponseDto {
+        val entity = PumpStation(
+            stationName = dto.stationName,
+            installedAggregateCount = dto.installedAggregateCount,
+            workingAggregateCount = dto.workingAggregateCount,
+            waterSource = dto.waterSource
+        )
+        return stationRepo.save(entity).toResponseDto()
+    }
+
     override fun getAllStations() =
         stationRepo.findAllByDeletedFalse().map { it.toResponseDto() }
 
@@ -233,6 +262,30 @@ class PumpExcelServiceImpl(
         entity.deleted = true
         entity.updatedAt = LocalDateTime.now()
         stationRepo.save(entity)
+    }
+
+    override fun createTechnical(dto: PumpStationTechnicalDto): PumpStationTechnicalResponseDto {
+        val station = dto.stationId?.let {
+            stationRepo.findByIdOrNull(it) ?: throw RuntimeException("PumpStation topilmadi: $it")
+        }
+        val entity = PumpStationTechnical(
+            pumpStation = station,
+            pumpModel = dto.pumpModel,
+            electricEngineModel = dto.electricEngineModel,
+            waterFlow = dto.waterFlow,
+            enginePowerKw = dto.enginePowerKw,
+            engineRotation = dto.engineRotation,
+            waterLiftHeight = dto.waterLiftHeight,
+            commissioningYear = dto.commissioningYear,
+            attachedArea = dto.attachedArea,
+            balanceValue = dto.balanceValue,
+            pressurePipeDiameter = dto.pressurePipeDiameter,
+            pressurePipeLength = dto.pressurePipeLength,
+            pressurePipeTotalLength = dto.pressurePipeTotalLength,
+            usedFarmers = dto.usedFarmers,
+            inn = dto.inn
+        )
+        return technicalRepo.save(entity).toResponseDto()
     }
 
     override fun getAllTechnicals() =

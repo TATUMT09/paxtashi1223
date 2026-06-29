@@ -1,3 +1,4 @@
+
 package QishloqHojalik.Paxtachi
 
 import org.springframework.boot.autoconfigure.SpringBootApplication

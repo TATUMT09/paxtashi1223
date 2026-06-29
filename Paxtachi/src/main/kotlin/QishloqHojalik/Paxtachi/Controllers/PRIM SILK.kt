@@ -3,6 +3,7 @@ package QishloqHojalik.Paxtachi.Controllers
 import QishloqHojalik.Paxtachi.Dtos.*
 import QishloqHojalik.Paxtachi.Enums.Direction
 import QishloqHojalik.Paxtachi.Security.AccessService
+import QishloqHojalik.Paxtachi.Services.ChangeLogService
 import QishloqHojalik.Paxtachi.Services.GreenhouseRecordService
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.http.MediaType
@@ -13,7 +14,8 @@ import org.springframework.web.multipart.MultipartFile
 @RequestMapping("/api/greenhouse-records")
 class GreenhouseRecordController(
     private val service: GreenhouseRecordService,
-    private val accessService: AccessService
+    private val accessService: AccessService,
+    private val changeLogService: ChangeLogService
 ) {
 
     private fun check(request: HttpServletRequest) {
@@ -42,7 +44,9 @@ class GreenhouseRecordController(
 
         check(request)
 
-        return service.create(dto)
+        val result = service.create(dto)
+        changeLogService.log(request, "greenhouse_records", result.id, "Yangi issiqxona qo'shildi", "CREATE")
+        return result
     }
 
     @GetMapping
@@ -68,11 +72,13 @@ class GreenhouseRecordController(
     fun update(
         request: HttpServletRequest,
         @PathVariable id: Long,
-        @RequestBody dto: GreenhouseRecordDto
+        @RequestBody dto: GreenhouseRecordDto,
+        @RequestParam(required = false, defaultValue = "") reason: String
     ): GreenhouseRecordResponseDto {
 
         check(request)
 
+        changeLogService.log(request, "greenhouse_records", id, reason)
         return service.update(id, dto)
     }
 
@@ -84,6 +90,7 @@ class GreenhouseRecordController(
 
         check(request)
 
+        changeLogService.log(request, "greenhouse_records", id, "Issiqxona o'chirildi", "DELETE")
         service.delete(id)
     }
 }

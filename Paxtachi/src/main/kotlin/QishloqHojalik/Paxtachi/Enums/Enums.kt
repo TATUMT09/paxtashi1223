@@ -4,15 +4,15 @@ enum class Direction(
     val panelUrl: String
 ) {
 
-    PAXTACHILIK("/paxtachilik"),
+    PAXTACHILIK("/dashboard"),
 
-    TUTCHILIK("/tutchilik"),
+    TUTCHILIK("/dashboard"),
 
     GALLACHILIK("/gallachilik"),
 
     BOGDORCHILIK("/bogdorchilik"),
 
-    CHORVACHILIK("/chorvachilik"),
+    CHORVACHILIK("/farm-representatives"),
 
     PUMP("/pump"),
 
@@ -34,11 +34,13 @@ enum class Direction(
 
     LOOKUP("/lookups"),
 
-    SUPER_ADMIN("/super-admin"),
+    SUPER_ADMIN("/dashboard"),
 
-    ADMIN("/admin"),
+    ADMIN("/dashboard"),
 
-    USER("/user")
+    USER("/dashboard"),
+
+    HOKIM("/hokim")
 }
 enum class Role {
     SUPER_ADMIN,

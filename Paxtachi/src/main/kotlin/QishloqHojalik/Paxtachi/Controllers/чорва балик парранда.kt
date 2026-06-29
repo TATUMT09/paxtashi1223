@@ -3,6 +3,7 @@ package QishloqHojalik.Paxtachi.Controllers
 import QishloqHojalik.Paxtachi.Dtos.*
 import QishloqHojalik.Paxtachi.Enums.Direction
 import QishloqHojalik.Paxtachi.Security.AccessService
+import QishloqHojalik.Paxtachi.Services.ChangeLogService
 import QishloqHojalik.Paxtachi.Services.FarmRepresentativeService
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.http.MediaType
@@ -13,13 +14,15 @@ import org.springframework.web.multipart.MultipartFile
 @RequestMapping("/api/farm-representatives")
 class FarmRepresentativeController(
     private val service: FarmRepresentativeService,
-    private val accessService: AccessService
+    private val accessService: AccessService,
+    private val changeLogService: ChangeLogService
 ) {
 
     private fun check(request: HttpServletRequest) {
         accessService.checkAccess(
             request,
-            Direction.FARM_REPRESENTATIVE
+            Direction.FARM_REPRESENTATIVE,
+            Direction.CHORVACHILIK
         )
     }
 
@@ -42,7 +45,9 @@ class FarmRepresentativeController(
 
         check(request)
 
-        return service.create(dto)
+        val result = service.create(dto)
+        changeLogService.log(request, "farm_representatives", result.id, "Yangi fermer vakili qo'shildi", "CREATE")
+        return result
     }
 
     @GetMapping
@@ -68,11 +73,13 @@ class FarmRepresentativeController(
     fun update(
         request: HttpServletRequest,
         @PathVariable id: Long,
-        @RequestBody dto: FarmRepresentativeDto
+        @RequestBody dto: FarmRepresentativeDto,
+        @RequestParam(required = false, defaultValue = "") reason: String
     ): FarmRepresentativeResponseDto {
 
         check(request)
 
+        changeLogService.log(request, "farm_representatives", id, reason)
         return service.update(id, dto)
     }
 
@@ -84,6 +91,7 @@ class FarmRepresentativeController(
 
         check(request)
 
+        changeLogService.log(request, "farm_representatives", id, "Fermer vakili o'chirildi", "DELETE")
         service.delete(id)
     }
 }

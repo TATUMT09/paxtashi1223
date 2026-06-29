@@ -6,6 +6,7 @@ import QishloqHojalik.Paxtachi.Dtos.ExcelImportResponse
 import QishloqHojalik.Paxtachi.Enums.Direction
 import QishloqHojalik.Paxtachi.Security.AccessService
 import QishloqHojalik.Paxtachi.Services.CadastreLandRecordService
+import QishloqHojalik.Paxtachi.Services.ChangeLogService
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.*
@@ -15,7 +16,8 @@ import org.springframework.web.multipart.MultipartFile
 @RequestMapping("/api/cadastre-land-records")
 class CadastreLandRecordController(
     private val service: CadastreLandRecordService,
-    private val accessService: AccessService
+    private val accessService: AccessService,
+    private val changeLogService: ChangeLogService
 ) {
 
     private fun check(request: HttpServletRequest) {
@@ -44,7 +46,9 @@ class CadastreLandRecordController(
 
         check(request)
 
-        return service.create(dto)
+        val result = service.create(dto)
+        changeLogService.log(request, "cadastre_land_records", result.id, "Yangi kadastr yozuvi qo'shildi", "CREATE")
+        return result
     }
 
     @GetMapping
@@ -70,11 +74,13 @@ class CadastreLandRecordController(
     fun update(
         request: HttpServletRequest,
         @PathVariable id: Long,
-        @RequestBody dto: CadastreLandRecordDto
+        @RequestBody dto: CadastreLandRecordDto,
+        @RequestParam(required = false, defaultValue = "") reason: String
     ): CadastreLandRecordResponseDto {
 
         check(request)
 
+        changeLogService.log(request, "cadastre_land_records", id, reason)
         return service.update(id, dto)
     }
 
@@ -86,6 +92,7 @@ class CadastreLandRecordController(
 
         check(request)
 
+        changeLogService.log(request, "cadastre_land_records", id, "Kadastr yozuvi o'chirildi", "DELETE")
         service.delete(id)
     }
 }

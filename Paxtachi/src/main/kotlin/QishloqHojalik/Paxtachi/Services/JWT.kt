@@ -1,26 +1,17 @@
 package QishloqHojalik.Paxtachi.Services
 
 import QishloqHojalik.Paxtachi.Entity.User
+import io.jsonwebtoken.Claims
 import io.jsonwebtoken.Jwts
-import io.jsonwebtoken.SignatureAlgorithm
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import jdk.internal.org.jline.keymap.KeyMap.key
 import org.springframework.stereotype.Service
 import org.springframework.web.filter.OncePerRequestFilter
 import java.util.*
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import org.springframework.security.config.annotation.web.builders.HttpSecurity
-import org.springframework.security.web.SecurityFilterChain
 import io.jsonwebtoken.security.Keys
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.web.cors.CorsConfiguration
-import org.springframework.web.cors.CorsConfigurationSource
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource
-
 import java.nio.charset.StandardCharsets
 
 
@@ -42,12 +33,15 @@ class JwtService {
     }
 
     fun extractUsername(token: String): String {
+        return extractAllClaims(token).subject
+    }
+
+    fun extractAllClaims(token: String): Claims {
         return Jwts.parserBuilder()
-            .setSigningKey(key)   // 🔥 SHU TO‘G‘RI
+            .setSigningKey(key)
             .build()
             .parseClaimsJws(token)
             .body
-            .subject
     }
 }
 
@@ -68,7 +62,14 @@ class JwtFilter(
             val token = header.substring(7)
 
             try {
-                val username = jwtService.extractUsername(token)
+                val claims = jwtService.extractAllClaims(token)
+                val username = claims.subject
+                val role = claims["role"] as? String
+                val direction = claims["direction"] as? String
+
+                request.setAttribute("username", username)
+                if (role != null) request.setAttribute("role", role)
+                if (direction != null) request.setAttribute("direction", direction)
 
                 val auth = UsernamePasswordAuthenticationToken(
                     username,
@@ -86,19 +87,3 @@ class JwtFilter(
         filterChain.doFilter(request, response)
     }
 }
-@Bean
-fun corsConfigurationSource(): CorsConfigurationSource {
-
-    val configuration = CorsConfiguration()
-    configuration.allowedOrigins = listOf("http://localhost:3000")
-    configuration.allowedMethods = listOf("GET","POST","PUT","DELETE","OPTIONS")
-    configuration.allowedHeaders = listOf("*")
-    configuration.allowCredentials = true
-
-    val source = UrlBasedCorsConfigurationSource()
-    source.registerCorsConfiguration("/**", configuration)
-
-    return source
-}
-
-

@@ -1,8 +1,11 @@
 package QishloqHojalik.Paxtachi.Services
 
+import QishloqHojalik.Paxtachi.Dtos.FarmerUpdateDto
 import QishloqHojalik.Paxtachi.Entity.PaxtachiBalance
 import QishloqHojalik.Paxtachi.Enums.Specialization
 import QishloqHojalik.Paxtachi.Repositories.PaxtachiBalanceRepository
+import org.springframework.data.repository.findByIdOrNull
+import java.time.LocalDateTime
 import org.apache.poi.ss.usermodel.DataFormatter
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.springframework.data.domain.*
@@ -154,6 +157,53 @@ class PaxtachiBalanceService(
             "pageSize" to size,
             "total" to resultPage.totalElements
         )
+    }
+
+    fun getById(id: Long): PaxtachiBalance {
+        return repository.findByIdOrNull(id)
+            ?: throw RuntimeException("Fermer topilmadi: $id")
+    }
+
+    fun updateFarmer(id: Long, dto: FarmerUpdateDto): PaxtachiBalance {
+        val farmer = repository.findByIdOrNull(id)
+            ?: throw RuntimeException("Fermer topilmadi: $id")
+        if (dto.name != null) farmer.name = dto.name
+        if (dto.stir != null) farmer.stir = dto.stir
+        if (dto.farmType != null) farmer.farmType = dto.farmType
+        if (dto.rightType != null) farmer.rightType = dto.rightType
+        if (dto.cadastralNumber != null) farmer.cadastralNumber = dto.cadastralNumber
+        if (dto.specialization != null) farmer.specialization = parseSpecialization(dto.specialization)
+        if (dto.totalArea != null) farmer.totalArea = dto.totalArea
+        if (dto.irrigatedArea != null) farmer.irrigatedArea = dto.irrigatedArea
+        if (dto.cottonArea != null) farmer.cottonArea = dto.cottonArea
+        if (dto.wheatArea != null) farmer.wheatArea = dto.wheatArea
+        if (dto.greenhouseArea != null) farmer.greenhouseArea = dto.greenhouseArea
+        if (dto.lalmiArea != null) farmer.lalmiArea = dto.lalmiArea
+        if (dto.orchardArea != null) farmer.orchardArea = dto.orchardArea
+        if (dto.grapeArea != null) farmer.grapeArea = dto.grapeArea
+        if (dto.poplarArea != null) farmer.poplarArea = dto.poplarArea
+        if (dto.otherTreeArea != null) farmer.otherTreeArea = dto.otherTreeArea
+        if (dto.pastureArea != null) farmer.pastureArea = dto.pastureArea
+        if (dto.hayfieldArea != null) farmer.hayfieldArea = dto.hayfieldArea
+        if (dto.meliorationArea != null) farmer.meliorationArea = dto.meliorationArea
+        if (dto.pondArea != null) farmer.pondArea = dto.pondArea
+        if (dto.reservoirArea != null) farmer.reservoirArea = dto.reservoirArea
+        if (dto.canalArea != null) farmer.canalArea = dto.canalArea
+        if (dto.houseArea != null) farmer.houseArea = dto.houseArea
+        if (dto.yardArea != null) farmer.yardArea = dto.yardArea
+        if (dto.buildingArea != null) farmer.buildingArea = dto.buildingArea
+        if (dto.otherArea != null) farmer.otherArea = dto.otherArea
+        if (dto.totalBalance != null) farmer.totalBalance = dto.totalBalance
+        farmer.updatedAt = LocalDateTime.now()
+        return repository.save(farmer)
+    }
+
+    fun deleteFarmer(id: Long) {
+        val farmer = repository.findByIdOrNull(id)
+            ?: throw RuntimeException("Fermer topilmadi: $id")
+        farmer.deleted = true
+        farmer.updatedAt = LocalDateTime.now()
+        repository.save(farmer)
     }
 
     fun getHududSection(name: String): List<PaxtachiBalance> {

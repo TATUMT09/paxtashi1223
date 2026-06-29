@@ -1,9 +1,11 @@
 package QishloqHojalik.Paxtachi.Controllers
 
+import QishloqHojalik.Paxtachi.Dtos.FarmerUpdateDto
 import QishloqHojalik.Paxtachi.Entity.PaxtachiBalance
 import QishloqHojalik.Paxtachi.Enums.Direction
 import QishloqHojalik.Paxtachi.Enums.Specialization
 import QishloqHojalik.Paxtachi.Security.AccessService
+import QishloqHojalik.Paxtachi.Services.ChangeLogService
 import QishloqHojalik.Paxtachi.Services.PaxtachiBalanceService
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.web.bind.annotation.*
@@ -13,13 +15,25 @@ import org.springframework.web.multipart.MultipartFile
 @RequestMapping("/api/v1/farmers")
 class FarmersController(
     private val service: PaxtachiBalanceService,
-    private val accessService: AccessService
+    private val accessService: AccessService,
+    private val changeLogService: ChangeLogService
 ) {
+
+    private fun checkAdmin(request: HttpServletRequest) {
+        val role = request.getAttribute("role") as? String
+            ?: throw RuntimeException("Token ichida role yo'q")
+        if (role != "SUPER_ADMIN" && role != "ADMIN")
+            throw RuntimeException("Faqat admin tahrirlashi mumkin")
+    }
 
     private fun check(request: HttpServletRequest) {
         accessService.checkAccess(
             request,
-            Direction.FARMERS
+            Direction.FARMERS,
+            Direction.PAXTACHILIK,
+            Direction.TUTCHILIK,
+            Direction.GALLACHILIK,
+            Direction.BOGDORCHILIK
         )
     }
 
@@ -72,13 +86,42 @@ class FarmersController(
         return mapOf("message" to result)
     }
 
+    @GetMapping("/{id}")
+    fun getById(
+        request: HttpServletRequest,
+        @PathVariable id: Long
+    ): PaxtachiBalance {
+        return service.getById(id)
+    }
+
+    @PutMapping("/{id}")
+    fun update(
+        request: HttpServletRequest,
+        @PathVariable id: Long,
+        @RequestBody dto: FarmerUpdateDto,
+        @RequestParam(required = false, defaultValue = "") reason: String
+    ): PaxtachiBalance {
+        checkAdmin(request)
+        changeLogService.log(request, "paxtachi_balance", id, reason, "UPDATE")
+        return service.updateFarmer(id, dto)
+    }
+
+    @DeleteMapping("/{id}")
+    fun delete(
+        request: HttpServletRequest,
+        @PathVariable id: Long,
+        @RequestParam(required = false, defaultValue = "") reason: String
+    ) {
+        checkAdmin(request)
+        changeLogService.log(request, "paxtachi_balance", id, reason, "DELETE")
+        service.deleteFarmer(id)
+    }
+
     @GetMapping("/hudud-section")
     fun getHududSection(
         request: HttpServletRequest,
         @RequestParam name: String
     ): List<PaxtachiBalance> {
-
-
         return service.getHududSection(name)
     }
 }
